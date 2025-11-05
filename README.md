@@ -7,13 +7,16 @@ CODE SNIPPETS:
 
 To set up the environment:
 
+
 #install required packages
 import sys
 %pip install atlasopenmagic
 from atlasopenmagic import install_from_environment
 install_from_environment
 
+
 Import dependancies:
+
 
 import urllib.request # for downloading files
 import pandas as pd # to store data as dataframes
@@ -24,7 +27,9 @@ from matplotlib.ticker import MaxNLocator,AutoMinorLocator # for minor ticks
 import awkward as ak # for handling complex and nested data structures efficiently
 import vector # For convenient 4-vector manipulation
 
+
 To retrieve data from the project:
+
 
 # Import the atlasopenmagic package so that we can use it
 import atlasopenmagic as atom
@@ -37,7 +42,9 @@ skim = '2muons'
 # the files locally rather than streaming them
 files_list = atom.get_urls('data', skim, protocol='https', cache=True)
 
+
 To calculate invariant dilepton mass:
+
 
 # calculate dilepton invariant mass
 def calc_mll(lep_pt,lep_eta,lep_phi,lep_e):
@@ -67,7 +74,9 @@ for afile in files_list:
     # Stop here!
     break
 
+
 Plotting data:
+
 
 # In case we ran over multiple files / batches, merge them together
 full_mass_list = ak.concatenate(mass_list)
