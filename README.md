@@ -1,4 +1,4 @@
-HELPFUUL LINKS:
+HELPFUL LINKS:
 https://hub.gesis.mybinder.org/user/atlas-outreach--ection-opendata-iyzqocta/doc/tree/13-TeV-examples/uproot_python/Find_the_Z.ipynb
 https://opendata.atlas.cern/docs/videotutorials/overview
 https://opendata.atlas.cern/docs/atlasopenmagic
