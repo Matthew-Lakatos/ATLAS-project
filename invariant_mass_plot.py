@@ -58,7 +58,7 @@ for afile in files_list:
 full_mass_list = ak.concatenate(mass_list)
 
 bin_edges = np.arange(start=70, # The interval includes this value
-                      stop=110, # The interval doesn't include this value
+                      stop=110, # The interval doesn't include this value          # BINEDGES ARE ERROR BARS
                       step=1 ) # Spacing between values
 bin_centres = (bin_edges[:-1] + bin_edges[1:]) / 2 # central values of each bin
 
@@ -75,12 +75,12 @@ main_axes = plt.gca()
 main_axes.errorbar(x=bin_centres,
                    y=data_x,
                    yerr=data_x_errors,
-                   fmt='ko',  # 'k' means black and 'o' is for circles
+                   fmt='ko',  # 'k' means black and 'o' is for circles, 's' is squares, 
                    label = 'Data')
 
 # set the axis tick parameters for the main axes
-main_axes.tick_params(which='both', # ticks on both x and y axes
-                        direction='in', # Put ticks inside and outside the axes
+main_axes.tick_params(which='both',                            # accepted arguments are major, minor and both (BOTH RECOMMENDED)
+                        direction='in', # Put ticks inside and outside the axes                     
                         top=True, # draw ticks on the top axis
                         right=True ) # draw ticks on right axis
 
@@ -91,10 +91,10 @@ main_axes.set_xlabel('Di-lepton Mass [GeV]', fontsize=13, x=1, horizontalalignme
 main_axes.set_ylabel('Events', fontsize=13, y=1, horizontalalignment='right')
 
 # make the y-axis log scale
-main_axes.set_yscale('log')
+main_axes.set_yscale('log') # acceptable arguments of log, linear, symlog, asinh (SYMLOG RECOMMENDED OR ASINH)
 
 # add minor ticks on x-axis for main axes
-main_axes.xaxis.set_minor_locator( AutoMinorLocator() )
+main_axes.xaxis.set_minor_locator( AutoMinorLocator() )         # REPLICATE FOR THE Y AXIS 
 
 # draw the legend
 main_axes.legend( frameon=False ); # no box around the legend
