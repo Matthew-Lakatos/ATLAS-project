@@ -62,7 +62,7 @@ bin_edges = np.arange(start=70, # The interval includes this value
 bin_centres = (bin_edges[:-1] + bin_edges[1:]) / 2 # central values of each bin
 
 # histogram the data
-data_x,_ = np.histogram(full_mass_list, bins=bin_edges )
+data_x,_ = np.histogram(full_momentum_list, bins=bin_edges )
 
 # statistical error on the data
 data_x_errors = np.sqrt(data_x)
