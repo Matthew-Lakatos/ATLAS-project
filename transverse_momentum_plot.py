@@ -47,7 +47,7 @@ for afile in files_list:
         data['tvm'] = calc_tvm(data.lep_pt, data.lep_eta, data.lep_phi, data.lep_e)
         # Keep the tvm as a flat array
         momentum_list.append( data['tvm'] )
-    break
+    # break (TO GET MORE DATA, OMITTED)
 
 
 # PLOTTING DATA
