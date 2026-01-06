@@ -21,6 +21,10 @@ pip install requests
 pip install aiohttp
 pip install pandas
 pip install matplotlib
+pip install sklearn
+from sklearn.neural_network import MLPRegressor
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
 
 
 
@@ -34,4 +38,7 @@ import uproot # to read .root files as dataframes
 import matplotlib.pyplot as plt # for plotting
 from matplotlib.ticker import MaxNLocator,AutoMinorLocator # for minor ticks
 import awkward as ak # for handling complex and nested data structures efficiently
-import vector # For convenient 4-vector manipulation 
+import vector # For convenient 4-vector manipulatio
+from sklearn.neural_network import MLPRegressor
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline 
