@@ -14,17 +14,14 @@ To set up the environment:
 #install required packages
 
 
-pip install atlasopenmagic
-pip install uproot
-pip install vector
-pip install requests
-pip install aiohttp
-pip install pandas
-pip install matplotlib
-pip install sklearn
-from sklearn.neural_network import MLPRegressor
-from sklearn.preprocessing import StandardScaler
-from sklearn.pipeline import Pipeline
+pip install atlasopenmagic;
+pip install uproot;
+pip install vector;
+pip install requests;
+pip install aiohttp;
+pip install pandas;
+pip install matplotlib;
+pip install scikit-learn;
 
 
 
