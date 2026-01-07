@@ -40,7 +40,7 @@ for afile in files_list:
                              library="ak"):
         data['mll'] = calc_mll(data.lep_pt, data.lep_eta, data.lep_phi, data.lep_e)
         mass_list.append(data['mll'])
-    break
+    
 
 masses = ak.to_numpy(ak.flatten(mass_list))
 
@@ -63,7 +63,7 @@ ax.xaxis.set_minor_locator(AutoMinorLocator())
 ax.yaxis.set_minor_locator(AutoMinorLocator())
 
 # ------------------------------------------------------------
-# Physics Model: Voigt (BW ⊗ Gaussian) + exponential background
+# Physics Model: Voigt (breit-wigner and Gaussian) + exponential background
 # ------------------------------------------------------------
 from numpy import sqrt, pi, exp
 from numpy import real
@@ -121,3 +121,68 @@ plt.ylabel("events / bin")
 plt.title("Dilepton invariant mass spectrum")
 plt.legend()
 plt.show()
+plt.savefig("plot.png")
+
+
+# getting properties of the z boson
+mZ = m.values["m0"]
+mZ_err = m.errors["m0"]
+
+gammaZ = m.values["gamma"]
+gammaZ_err = m.errors["gamma"]
+
+sigma_det = m.values["sigma"]
+sigma_det_err = m.errors["sigma"]
+
+
+print(f"Z mass: {mZ:.3f} ± {mZ_err:.3f} GeV")
+print(f"Z width: {gammaZ:.3f} ± {gammaZ_err:.3f} GeV")
+print(f"Detector resolution σ: {sigma_det:.3f} ± {sigma_det_err:.3f} GeV")
+
+
+# number of Z events
+
+# Dense x-grid for smooth integration
+x_dense = np.linspace(60, 120, 2000)
+
+# Evaluate signal-only component
+A = m.values["A"]
+m0 = m.values["m0"]
+gamma = m.values["gamma"]
+sigma = m.values["sigma"]
+
+signal_dense = A * voigt(x_dense, m0, gamma, sigma)
+
+# Integrate signal i80-100 GeV
+sig_mask = (x_dense >= 80) & (x_dense <= 100)
+N_signal = np.trapz(signal_dense[sig_mask], x_dense[sig_mask])
+
+print(f"Z signal yield (80–100 GeV): {N_signal:.1f} events")
+
+
+B = m.values["B"]
+C = m.values["C"]
+
+background_dense = np.exp(B + C * x_dense)
+
+N_background = np.trapz(background_dense[sig_mask], x_dense[sig_mask])
+
+print(f"Background yield (80–100 GeV): {N_background:.1f} events")
+
+
+#purity and significance
+
+purity = N_signal / (N_signal + N_background)
+significance = N_signal / np.sqrt(N_background)
+
+print(f"Purity S/(S+B): {purity:.4f}")
+print(f"Significance S/sqrt(B): {significance:.2f}")
+
+print("\n--- Z Boson Extraction Summary ---")
+print(f"Z mass m0: {m0:.3f} GeV")
+print(f"Z width gamma: {gamma:.3f} GeV")
+print(f"Detector resolution sigma: {sigma:.3f} GeV")
+print(f"Signal yield (80–100 GeV): {N_signal:.1f}")
+print(f"Background yield (80–100 GeV): {N_background:.1f}")
+print(f"Purity: {purity:.4f}")
+print(f"Significance: {significance:.2f}")
