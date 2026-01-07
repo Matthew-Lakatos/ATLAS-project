@@ -22,6 +22,7 @@ pip install aiohttp;
 pip install pandas;
 pip install matplotlib;
 pip install scikit-learn;
+pip install iminuit;
 
 
 
