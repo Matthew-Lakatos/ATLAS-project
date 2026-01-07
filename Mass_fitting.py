@@ -13,7 +13,7 @@ import vector
 import atlasopenmagic as atom
 
 # iminuit for proper physics fitting
-!pip install iminuit
+
 from iminuit import Minuit
 from iminuit.cost import LeastSquares
 
