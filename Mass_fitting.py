@@ -1,4 +1,6 @@
-# imports
+# ------------------------------------------------------------
+# Imports
+# ------------------------------------------------------------
 import urllib.request
 import pandas as pd
 import numpy as np
@@ -10,31 +12,26 @@ import vector
 
 import atlasopenmagic as atom
 
-# scikit-learn imports
-import sklearn
-from sklearn.neural_network import MLPRegressor
-from sklearn.preprocessing import StandardScaler
-from sklearn.pipeline import Pipeline
+# iminuit for proper physics fitting
+!pip install iminuit
+from iminuit import Minuit
+from iminuit.cost import LeastSquares
 
-
-# set up atlas open data
+# ------------------------------------------------------------
+# Load ATLAS Open Data
+# ------------------------------------------------------------
 atom.set_release('2025e-13tev-beta')
 skim = '2muons'
 files_list = atom.get_urls('data', skim, protocol='https', cache=True)
 
-
-# dilepton invariant mass function
 def calc_mll(lep_pt, lep_eta, lep_phi, lep_e):
     p4 = vector.zip({"pt": lep_pt, "eta": lep_eta, "phi": lep_phi, "e": lep_e})
     return (p4[:, 0] + p4[:, 1]).M
 
-
-# load masses from data
 mass_list = []
 
 for afile in files_list:
-    print(f'working on file {afile} ({files_list.index(afile)}/{len(files_list)})')
-
+    print(f'working on file {afile}')
     tree = uproot.open(afile + ":analysis")
     numevents = tree.num_entries
 
@@ -45,12 +42,11 @@ for afile in files_list:
         mass_list.append(data['mll'])
     break
 
-
-# flatten mass array
 masses = ak.to_numpy(ak.flatten(mass_list))
 
-
-# histogram using original plotting style
+# ------------------------------------------------------------
+# Histogram
+# ------------------------------------------------------------
 bins = np.linspace(0, 200, 200)
 hist, bin_edges = np.histogram(masses, bins=bins)
 bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
@@ -66,73 +62,62 @@ ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 ax.xaxis.set_minor_locator(AutoMinorLocator())
 ax.yaxis.set_minor_locator(AutoMinorLocator())
 
+# ------------------------------------------------------------
+# Physics Model: Voigt (BW ⊗ Gaussian) + exponential background
+# ------------------------------------------------------------
+from numpy import sqrt, pi, exp
+from numpy import real
+from scipy.special import wofz
 
-# region selection helper
-def select_region(x, y, xmin, xmax):
-    mask = (x >= xmin) & (x <= xmax)
-    return x[mask], y[mask]
+def voigt(x, m0, gamma, sigma):
+    z = ((x - m0) + 1j * gamma/2) / (sigma * np.sqrt(2))
+    return real(wofz(z)) / (sigma * np.sqrt(2*np.pi))
 
+def model(x, A, m0, gamma, sigma, B, C):
+    signal = A * voigt(x, m0, gamma, sigma)
+    background = np.exp(B + C*x)
+    return signal + background
 
-# choose fit and validation regions
-x_fit, y_fit = select_region(bin_centers, hist, 80, 100)   # z peak
-x_test, y_test = select_region(bin_centers, hist, 110, 150)  # high-mass tail
+# ------------------------------------------------------------
+# Fit using iminuit
+# ------------------------------------------------------------
+x = bin_centers
+y = hist
+yerr = np.sqrt(hist + 1)
 
-# define compound fit function
-def compound_model(x, A, m0, gamma, B, C):
-    bw = A * (gamma**2 / ((x - m0)**2 + (gamma**2)/4))
-    bkg = np.exp(B + C * x)
-    return bw + bkg
+least_squares = LeastSquares(x, y, yerr, model)
 
-# build background model
-bkg_model = Pipeline([
-    ("scaler", StandardScaler()),
-    ("mlp", MLPRegressor(hidden_layer_sizes=(10,10),
-                         activation='tanh',
-                         alpha=1e-2,
-                         learning_rate_init=1e-3,
-                         max_iter=8000,
-                         random_state=1))
-])
+m = Minuit(least_squares,
+           A=50000,
+           m0=91.0,
+           gamma=2.5,
+           sigma=2.0,
+           B=5.0,
+           C=-0.02)
 
-# smooth resonance model
-res_model = Pipeline([
-    ("scaler", StandardScaler()),
-    ("mlp", MLPRegressor(hidden_layer_sizes=(15,),
-                         activation='tanh',
-                         alpha=1e-2,
-                         learning_rate_init=1e-3,
-                         max_iter=8000,
-                         random_state=2))
-])
+m.limits["gamma"] = (1.0, 5.0)
+m.limits["sigma"] = (0.5, 5.0)
 
-# training regions
-x_low, y_low = select_region(bin_centers, hist, 40, 70)
-x_peak, y_peak = select_region(bin_centers, hist, 80, 100)
-x_high, y_high = select_region(bin_centers, hist, 110, 150)
+m.migrad()
+m.hesse()
 
-# train background on sidebands
-x_bkg = np.concatenate([x_low, x_high])
-y_bkg = np.log1p(y_bkg := np.concatenate([y_low, y_high]))  # log stabilisation
-bkg_model.fit(x_bkg.reshape(-1,1), y_bkg)
+print("Fit results:")
+print(m.values)
+print("chi2 =", m.fval)
+print("ndof =", len(x) - m.nfit)
+print("chi2/ndof =", m.fval / (len(x) - m.nfit))
 
-# train resonance on peak
-res_model.fit(x_peak.reshape(-1,1), np.log1p(y_peak))
+# ------------------------------------------------------------
+# Plot final fit
+# ------------------------------------------------------------
+x_dense = np.linspace(0, 200, 2000)
+y_fit = model(x_dense, *m.values)
 
-# combined prediction
-def combined_predict(x):
-    b = np.expm1(bkg_model.predict(x.reshape(-1,1)))
-    r = np.expm1(res_model.predict(x.reshape(-1,1)))
-    y = b + r
-    return np.nan_to_num(y, nan=0.0, posinf=0.0, neginf=0.0)
-
-# validation
-x_val, y_val = select_region(bin_centers, hist, 150, 180)
-y_val_pred = combined_predict(x_val)
-chi2 = np.sum((y_val - y_val_pred)**2 / (y_val_pred + 1e-6))
-print("validation x^2 =", chi2)
-
-# plot
-x_dense = np.linspace(0, 200, 500)
-y_dense = combined_predict(x_dense)
-plt.plot(x_dense, y_dense, color='red', label='combined sklearn fit')
+plt.figure(figsize=(10,6))
+plt.step(bin_centers, hist, where='mid', color='black')
+plt.plot(x_dense, y_fit, color='red', label='iminuit fit')
+plt.xlabel("m$_{\ell\ell}$ [GeV]")
+plt.ylabel("events / bin")
+plt.title("Dilepton invariant mass spectrum")
 plt.legend()
+plt.show()
