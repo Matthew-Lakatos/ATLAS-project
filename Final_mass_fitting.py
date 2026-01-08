@@ -40,6 +40,7 @@ for afile in files_list:
                              library="ak"):
         data['mll'] = calc_mll(data.lep_pt, data.lep_eta, data.lep_phi, data.lep_e)
         mass_list.append(data['mll'])
+    break
     
 
 masses = ak.to_numpy(ak.flatten(mass_list))
@@ -73,27 +74,33 @@ def voigt(x, m0, gamma, sigma):
     z = ((x - m0) + 1j * gamma/2) / (sigma * np.sqrt(2))
     return real(wofz(z)) / (sigma * np.sqrt(2*np.pi))
 
-def model(x, A, m0, gamma, sigma, B, C):
+def model(x, A, m0, gamma, sigma, K, B, C):
     signal = A * voigt(x, m0, gamma, sigma)
-    background = np.exp(B + C*x)
+    background = K * np.exp(B + C*x)
     return signal + background
 
 # ------------------------------------------------------------
-# Fit using iminuit
+# Fit using iminuit — Poisson log-likelihood
 # ------------------------------------------------------------
 x = bin_centers
 y = hist
-yerr = np.sqrt(hist + 1)
 
-least_squares = LeastSquares(x, y, yerr, model)
+# Poisson negative log-likelihood for binned data
+def nll(A, m0, gamma, sigma, B, C):
+    mu = model(x, A, m0, gamma, sigma, K, B, C)  # expected counts
+    mu = np.clip(mu, 1e-12, None)             # avoid log(0)
+    return 2 * np.sum(mu - y * np.log(mu))    # 2*NLL convention
 
-m = Minuit(least_squares,
-           A=50000,
-           m0=91.0,
-           gamma=2.5,
-           sigma=2.0,
-           B=5.0,
-           C=-0.02)
+m = Minuit(
+    nll,
+    A=50000,
+    m0=91.0,
+    gamma=2.5,
+    sigma=2.0,
+    K=1.0,
+    B=5.0,
+    C=-0.02
+)
 
 m.limits["gamma"] = (1.0, 5.0)
 m.limits["sigma"] = (0.5, 5.0)
@@ -103,9 +110,40 @@ m.hesse()
 
 print("Fit results:")
 print(m.values)
-print("chi2 =", m.fval)
+print("NLL =", m.fval)
 print("ndof =", len(x) - m.nfit)
-print("chi2/ndof =", m.fval / (len(x) - m.nfit))
+print("Number of datapoints used:", len(y))
+print("Non‑empty bins:", np.sum(y > 0))
+print("Number of events:", len(masses))
+
+
+
+# ------------------------------------------------------------
+# Likelihood-ratio goodness-of-fit test
+# ------------------------------------------------------------
+mu = model(x, *m.values)
+mu = np.clip(mu, 1e-12, None)   # avoid μ = 0
+
+y = hist.astype(float)
+
+# Initialize GOF
+gof = 0.0
+
+for yi, mui in zip(y, mu):
+    if yi > 0:
+        gof += 2 * (yi * np.log(yi / mui) - (yi - mui))
+    else:
+        # yi = 0 → term reduces to 2 * mui
+        gof += 2 * mui
+
+ndof = len(y) - m.nfit
+
+print(f"GOF statistic: {gof:.2f}")
+print(f"ndof: {ndof}")
+print(f"GOF/ndof: {gof/ndof:.2f}")
+
+
+
 
 # ------------------------------------------------------------
 # Plot final fit
@@ -150,8 +188,13 @@ A = m.values["A"]
 m0 = m.values["m0"]
 gamma = m.values["gamma"]
 sigma = m.values["sigma"]
+K = m.values["K"]
+B = m.values["B"]
+C = m.values["C"]
 
 signal_dense = A * voigt(x_dense, m0, gamma, sigma)
+background_dense = K * np.exp(B + C * x_dense)
+
 
 # Integrate signal i80-100 GeV
 sig_mask = (x_dense >= 80) & (x_dense <= 100)
