@@ -64,9 +64,9 @@ def voigt(x, m0, gamma, sigma):
     z = ((x - m0) + 1j * gamma/2) / (sigma * np.sqrt(2))
     return real(wofz(z)) / (sigma * np.sqrt(2*np.pi))
 
-def model(x, A, m0, gamma, sigma, B, C):
+def model(x, A, m0, gamma, sigma, B, C, D):
     signal = A * voigt(x, m0, gamma, sigma)
-    background = np.exp(B + C * x)
+    background = np.exp(B + C * x + D * (x**2))
     return signal + background
 
 
@@ -90,8 +90,8 @@ weights[x <= tail_threshold] = tail_weight
 
 
 
-def nll(A, m0, gamma, sigma, B, C):
-    mu = model(x, A, m0, gamma, sigma, B, C)
+def nll(A, m0, gamma, sigma, B, C, D):
+    mu = model(x, A, m0, gamma, sigma, B, D, C)
     mu = np.clip(mu, 1e-12, None)
 
     # 2*NLL with per-bin weights to emphasize the tail
@@ -105,7 +105,8 @@ m = Minuit(
     gamma=2.5,
     sigma=2.0,
     B=5.0,
-    C=-0.02
+    C=-0.02,
+    D=0.0
 )
 
 m.limits["gamma"] = (1.0, 5.0)
