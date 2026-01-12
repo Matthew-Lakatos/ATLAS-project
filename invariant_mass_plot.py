@@ -52,7 +52,7 @@ for afile in files_list:
 masses = ak.to_numpy(ak.flatten(mass_list))
 
 
-# histogram using original plotting style
+# histogram
 bins = np.linspace(0, 200, 200)
 hist, bin_edges = np.histogram(masses, bins=bins)
 bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
@@ -158,6 +158,6 @@ print("validation x^2 =", chi2)
 # plot
 x_dense = np.linspace(0, 200, 500)
 y_dense = combined_predict(x_dense)
-plt.plot(x_dense, y_dense, color='red', label='combined sklearn fit')
+plt.plot(x_dense, y_dense, color='red', label='compound fit')
 plt.legend()
 plt.savefig("plot.png")
