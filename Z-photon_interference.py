@@ -13,6 +13,8 @@ vector.register_awkward()  # enable vector with awkward
 atom.set_release('2025e-13tev-beta')
 skim = '2to4lep'
 files_list = atom.get_urls('data', skim='2to4lep', protocol='https', cache=True)
+max_files = 5
+files_list = files_list[:max_files]
 
 # Helper: compute Collins–Soper cos(theta*) for a dilepton pair
 def cos_theta_cs(lep1, lep2):
