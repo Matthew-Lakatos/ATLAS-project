@@ -13,3 +13,17 @@ pip install scikit-learn;
 pip install iminuit;
 
 
+=== Z-Only Fit Results ===
+
+A=21097.62274360556
+m0=91.02700653752531
+gamma=3.577761157347231
+sigma=1.428890452338849
+p1=-0.05022620659112789
+p2=0.004210356900388922
+
+GOF: 7.41
+ndof: 14
+Z mass: 91.207 ± 0.060 GeV
+Z width: 3.578 ± 0.385 GeV
+Detector resolution σ: 1.429 ± 0.133 GeV
