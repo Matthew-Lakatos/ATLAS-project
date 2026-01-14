@@ -6,7 +6,7 @@ from matplotlib.ticker import MaxNLocator, AutoMinorLocator
 import atlasopenmagic as atom
 
 atom.set_release('2025e-13tev-beta')
-skim = '2L'   # Z boson skim
+skim = '2muons'   # Z boson skim
 files_list = atom.get_urls('data', skim, protocol='https', cache=True)
 
 # Use only the first 3 files
