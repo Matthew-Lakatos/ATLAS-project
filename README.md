@@ -24,7 +24,7 @@ p2=0.004210356900388922
 
 GOF: 7.41
 ndof: 14
-Z mass: 91.207 ± 0.060 GeV
+Z mass: 91.027 ± 0.060 GeV
 Z width: 3.578 ± 0.385 GeV
 Detector resolution σ: 1.429 ± 0.133 GeV
 
