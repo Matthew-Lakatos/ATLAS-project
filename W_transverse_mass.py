@@ -24,14 +24,14 @@ for afile in files_list:
     numevents = tree.num_entries
 
     for data in tree.iterate(
-        ['lep_pt','lep_phi','met_et','met_phi'],
+        ['lep_pt','lep_phi','met','met_phi'],
         entry_stop=int(numevents * 0.5),
         library="ak"
     ):
         lep_pt  = data['lep_pt'][:,0]
         lep_phi = data['lep_phi'][:,0]
 
-        met     = data['met_et']
+        met     = data['met']
         met_phi = data['met_phi']
 
         dphi = lep_phi - met_phi
@@ -39,7 +39,6 @@ for afile in files_list:
         mT = transverse_mass(lep_pt, met, dphi)
         mT_list.append(mT)
 
-    break
 
 mT_all = ak.to_numpy(ak.flatten(mT_list))
 
@@ -61,3 +60,4 @@ ax.xaxis.set_minor_locator(AutoMinorLocator())
 ax.yaxis.set_minor_locator(AutoMinorLocator())
 
 plt.show()
+plt.savefig("plot.png")
