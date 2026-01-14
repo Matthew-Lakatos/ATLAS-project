@@ -9,6 +9,7 @@ import atlasopenmagic as atom
 atom.set_release('2025e-13tev-beta')
 skim = '1LMET30'
 files_list = atom.get_urls('data', skim, protocol='https', cache=True)
+files_list = files_list[:6]
 
 # Transverse mass function
 def transverse_mass(pt_lep, met, dphi):
