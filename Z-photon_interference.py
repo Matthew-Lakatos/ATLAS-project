@@ -13,8 +13,8 @@ vector.register_awkward()  # enable vector with awkward
 atom.set_release('2025e-13tev-beta')
 skim = '2to4lep'
 files_list = atom.get_urls('data', skim='2to4lep', protocol='https', cache=True)
-max_files = 5
-files_list = files_list[:max_files]
+max_files = 1
+files_list = files_list[:max_files] # technical limitation due to limited processing power
 
 # Helper: compute Collins–Soper cos(theta*) for a dilepton pair
 def cos_theta_cs(lep1, lep2):
@@ -31,7 +31,6 @@ def cos_theta_cs(lep1, lep2):
     qT = q.pt
 
     # Light-cone components of leptons
-    # p^+ = (E + pz) / sqrt(2),  p^- = (E - pz) / sqrt(2)
     sqrt2 = np.sqrt(2.0)
     p1_plus  = (lep1.E + lep1.pz) / sqrt2
     p1_minus = (lep1.E - lep1.pz) / sqrt2
@@ -45,7 +44,6 @@ def cos_theta_cs(lep1, lep2):
 
     # Sign convention: use sign of dilepton rapidity to approximate quark direction
     sign_y = np.sign(q.rapidity)
-    # where rapidity is exactly zero, leave sign as +1
     sign_y = ak.where(sign_y == 0, 1.0, sign_y)
 
     return sign_y * cos_theta
@@ -60,11 +58,9 @@ for afile in files_list:
     tree = uproot.open(afile + ":analysis")
     numevents = tree.num_entries
 
-    # Branch names may need adjustment if different in this skim
     branches = [
         "lep_pt", "lep_eta", "lep_phi", "lep_e",
-        "lep_charge",  # needed for OS pairs
-        # "lep_type",  # if you want to restrict to e/μ; optional
+        "lep_charge",
     ]
 
     for data in tree.iterate(branches, entry_stop=numevents, library="ak"):
@@ -74,12 +70,6 @@ for afile in files_list:
         lep_e      = data["lep_e"]
         lep_charge = data["lep_charge"]
 
-        # Optional: if you want only electrons/muons, restrict here using lep_type, if available.
-        # Example
-        # lep_type = data["lep_type"]  # say 11 for e, 13 for mew
-        # mask_em = (abs(lep_type) == 11) | (abs(lep_type) == 13)
-        # lep_pt, lep_eta, lep_phi, lep_e, lep_charge = lep_pt[mask_em], ...
-
         # Build four-vectors for all leptons in the event
         leps = vector.zip({
             "pt": lep_pt,
@@ -88,7 +78,6 @@ for afile in files_list:
             "E": lep_e,
         })
 
-        # Also keep charges aligned
         charges = lep_charge
 
         # Build all lepton pairs per event
@@ -113,16 +102,10 @@ for afile in files_list:
         q1   = q1[os_mask]
         q2   = q2[os_mask]
 
-        # If you want only same-flavour (ee, μμ), and have lep_type, enforce that here:
-        # t1 = lep_type[i][os_mask]
-        # t2 = lep_type[j][os_mask]
-        # sf_mask = (t1 == t2)
-        # lep1, lep2, q1, q2 = lep1[sf_mask], lep2[sf_mask], q1[sf_mask], q2[sf_mask]
-
         if ak.count(lep1) == 0:
             continue
 
-        # Ensure lep1 is the negatively charged lepton (convention for CS)
+        # Ensure lep1 is the negatively charged lepton (CS convention)
         swap = (q1 > 0)
         lep1_cs = ak.where(swap, lep2, lep1)
         lep2_cs = ak.where(swap, lep1, lep2)
@@ -145,15 +128,16 @@ costh_all = ak.to_numpy(ak.flatten(costh_all))
 print("Total OSSF pairs:", len(mll_all))
 
 
-# Compute A_FB(m_ll)
+# ============================================================
+# Compute A_FB(m_ll) with VARIABLE-WIDTH (OPTION 1) BINNING
+# ============================================================
 
-# Choose mass range and binning
-m_min, m_max = 40.0, 200.0
+# Piecewise binning: wide tails, fine around Z
+bins_low  = np.linspace(40, 70, 3, endpoint=False)     # 40–55–70
+bins_z    = np.linspace(70, 110, 17, endpoint=False)   # fine Z region
+bins_high = np.linspace(110, 200, 6)                   # wide high tail
 
-# You can tune bins: finer near Z, coarser in tails
-# For now, uniform bins for simplicity
-n_bins = 24
-m_bins = np.linspace(m_min, m_max, n_bins + 1)
+m_bins = np.concatenate([bins_low, bins_z, bins_high])
 
 # Indices of forward/backward events
 forward = costh_all > 0
@@ -171,19 +155,24 @@ N_tot = N_F + N_B
 A_FB = np.zeros_like(N_tot, dtype=float)
 A_FB_err = np.zeros_like(N_tot, dtype=float)
 
-# Avoid division by zero
 mask = N_tot > 0
 A_FB[mask] = (N_F[mask] - N_B[mask]) / N_tot[mask]
-
-# Binomial error estimate: var(A_FB) ≈ (1 - A_FB^2) / N_tot
 A_FB_err[mask] = np.sqrt((1.0 - A_FB[mask]**2) / N_tot[mask])
 
-# Bin centers for plotting
+# Bin centers and widths
 m_centers = 0.5 * (m_bins[:-1] + m_bins[1:])
+xerr = 0.5 * (m_bins[1:] - m_bins[:-1])
 
 # Plot A_FB(m_ll)
-plt.figure(figsize=(10,6))
-plt.errorbar(m_centers, A_FB, yerr=A_FB_err, fmt='o', color='black', capsize=3)
+plt.figure(figsize=(10, 6))
+plt.errorbar(
+    m_centers,
+    A_FB,
+    yerr=A_FB_err,
+    fmt='o',
+    color='black',
+    capsize=3
+)
 plt.axhline(0.0, color='gray', linestyle='--')
 
 plt.xlabel(r"$m_{\ell\ell}$ [GeV]")
