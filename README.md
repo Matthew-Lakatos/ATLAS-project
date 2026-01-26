@@ -1,5 +1,6 @@
 To set up the environment:
 
+'''bash
 pip install atlasopenmagic;
 pip install uproot;
 pip install vector;
@@ -9,7 +10,7 @@ pip install pandas;
 pip install matplotlib;
 pip install scikit-learn;
 pip install iminuit;
-
+'''
 
 === Z-Only Fit Results ===
 
@@ -29,7 +30,7 @@ Detector resolution σ: 1.429 ± 0.133 GeV
 ==========================
 
 References:
-
+'''CSL
 [0] 08/01/2025 - https://en.wikipedia.org/wiki/Electroweak_interaction
 [1] 08/01/2025 - https://en.wikipedia.org/wiki/Electroweak_interaction
 [2] 09/01/2025 - https://www.open.edu/openlearn/science-maths-technology/particle-physics/content-section-8.1
@@ -49,3 +50,4 @@ References:
 [16] 12/01/2025 - https://www.lhc-closer.es/taking_a_closer_look_at_lhc/0.momentum
 [17] 13/01/2025 - https://pdglive.lbl.gov/Particle.action?node=S044&init=0
 [18] 13/01/2025 - https://en.wikipedia.org/wiki/Transverse_mass
+'''
