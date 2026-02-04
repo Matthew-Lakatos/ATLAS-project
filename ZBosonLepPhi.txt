@@ -1,0 +1,70 @@
+import urllib.request # For downloading files
+import pandas as pd # To store data as dataframes
+import numpy as np # For numerical calculations used in histogramming
+import uproot # To read .root files as dataframes
+import matplotlib.pyplot as plt # For plotting
+from matplotlib.ticker import MaxNLocator,AutoMinorLocator # For minor ticks
+import awkward as ak # For handling complex and nested data structures efficiently
+import atlasopenmagic as atom # For the collision data
+
+atom.set_release('2025e-13tev-beta') # Newest release of ATLAS data
+
+skim = '2muons' # Just data with 2 muons
+
+files_list = atom.get_urls('data', skim, protocol='https', cache=True) # Get the files and cache them to avoid repeatedly downloading the same data.
+filesToAnalyse = 5 # How many files we will analyse before stopping to plot the histogram
+
+lepPHI_list = [] # This list will hold all our output lepton phi angles
+
+for afile in files_list: # Loop through all the files that we have
+    print(f'Working on file {afile} ({files_list.index(afile) + 1}/{len(files_list) + 1})')
+
+    tree = uproot.open(afile+":analysis") # Open the file
+    numevents = tree.num_entries # Number of events in the current file
+
+    for data in tree.iterate(['lep_pt','lep_eta','lep_phi','lep_e'], # Data is made up of a bunch of lepton stuff
+                             entry_stop=numevents*0.5, # Stop after fraction of events we want to process
+                             library="ak"):
+        for val in data['lep_phi']:
+            lepPHI_list.append(val)  # Add each individual lepton phi angle data into the list
+            
+    if ((files_list.index(afile) + 1) >= filesToAnalyse):
+        break
+
+full_lepPHI_list = ak.concatenate(lepPHI_list) # Merges multiple files together
+
+bin_edges = np.arange(start=-3.5, # The interval includes this value
+                      stop=3.5, # The interval doesn't include this value
+                      step=0.02 ) # Spacing between values
+
+bin_centres = (bin_edges[:-1] + bin_edges[1:]) / 2 # Central values of each bin
+
+data_x,_ = np.histogram(full_lepPHI_list, bins=bin_edges ) # Histograms the data
+
+data_x_errors = np.sqrt(data_x) # Shows the statistical error on the data
+
+main_axes = plt.gca() # Get the current axes
+
+main_axes.errorbar( # Plot the data points
+    x=bin_centres,
+    y=data_x,
+    yerr=data_x_errors,
+    fmt='ko',  # Each point on the histogram is plotted as a black circle
+    label = 'Data') # The name for the data points
+
+main_axes.tick_params( # Customise the ticks for the axes
+    which='both', # Ticks on both the x and y axes
+    direction='in', # Put ticks inside the axes
+    top=False, # No ticks on the top axis
+    right=False ) # No ticks on the right axis
+
+main_axes.set_xlabel('Lepton Phi Angle [rad]', fontsize=13, x=1, horizontalalignment='right') # Labels the x-axis
+main_axes.set_ylabel('Events', fontsize=13, y=1, horizontalalignment='right') # Labels the y-axis
+
+main_axes.set_xscale('linear') # Makes the x-axis linear scale
+main_axes.set_yscale('linear') # Makes the y-axis linear scale
+
+main_axes.xaxis.set_minor_locator(AutoMinorLocator()) # Adds minor ticks on the x-axis for main axes
+main_axes.yaxis.set_minor_locator(AutoMinorLocator()) # Adds minor ticks on the y-axis for main axes
+
+main_axes.legend(frameon=False); # No frame on the key in the top right
