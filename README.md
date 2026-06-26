@@ -1,3 +1,7 @@
+To clarify the project, this is the supporting codebase for the "Working with Weak Bosons in the Large Hadron Collider" group project, presented as supplementary evidence at the Lancaster University presentation.
+
+Disclaimer: The work created is a result of collaboration between myself, Ben Cziburly and Jakub Spiewak. I do not intend to take sole credit for the work of us as a collective.
+
 To set up the environment:
 
 pip install atlasopenmagic;
